@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>歩数計算プログラム</title>
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+<body>
+  <h1>歩数計算プログラム</h1>
+
+  <div id="deviceorientation">
+    <p>北極方向に対する向き: <span id="dir"></span></p>
+    <p>前後の傾き角度: <span id="fb"></span></p>
+    <p>左右の傾き角度: <span id="lr"></span></p>
+  </div>
+
+  <label for="modeSelect">モード選択:</label>
+  <select id="modeSelect" onchange="changeMode()">
+    <option value="normal">歩数計</option>
+    <option value="smartphone">歩きスマホ</option>
+  </select>
+
+  <p>歩数: <span id="stepCount">0</span></p>
+
+  <button onclick="startSensor()">Start Sensor</button>
+
+  <script>
+    let isRunning = false;
+    let stepCount = 0;
+    let lastOrientation = { alpha: 0, beta: 0, gamma: 0 };
+    let selectedMode = "normal";
+
+    function startSensor() {
+      DeviceOrientationEvent.requestPermission().then(function (response) {
+        if (response === 'granted') {
+          window.addEventListener("deviceorientation", handleOrientation);
+          isRunning = true;
+        }
+      }).catch(function (e) {
+        console.log(e);
+      });
+    }
+
+    function handleOrientation(e) {
+      e.preventDefault();
+
+      var dir = e.alpha;   // 北極方向に対する向きの角度
+      var fb = e.beta;      // 前後の傾き角度
+      var lr = e.gamma;     // 左右の傾き角度
+
+      document.getElementById("dir").innerText = dir.toFixed(2);
+      document.getElementById("fb").innerText = fb.toFixed(2);
+      document.getElementById("lr").innerText = lr.toFixed(2);
+
+      if (selectedMode === "normal") {
+        var deltaOrientation = Math.abs(dir - lastOrientation.alpha) +
+                               Math.abs(fb - lastOrientation.beta) +
+                               Math.abs(lr - lastOrientation.gamma);
+
+        if (deltaOrientation > 180) {
+          stepCount++;
+          document.getElementById("stepCount").innerText = stepCount;
+        }
+      } else if (selectedMode === "smartphone") {
+        // 歩きスマホモードの処理（北極方向に対する向きで歩数を増減）
+        // 北極方向に対する向きの変化が50以上のときに歩数を増加
+        var deltaDir = Math.abs(dir - lastOrientation.alpha);
+        if (deltaDir > 50) {
+          stepCount++;
+          document.getElementById("stepCount").innerText = stepCount;
+        }
+      }
+
+      // 現在の向きを保存
+      lastOrientation.alpha = dir;
+      lastOrientation.beta = fb;
+      lastOrientation.gamma = lr;
+    }
+
+    function changeMode() {
+      selectedMode = document.getElementById("modeSelect").value;
+      // モードが切り替わった際に、歩数をリセットするなどの処理を追加できます
+      stepCount = 0;
+      document.getElementById("stepCount").innerText = stepCount;
+    }
+  </script>
+</body>
+</html>
